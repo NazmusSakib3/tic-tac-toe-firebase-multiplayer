@@ -308,9 +308,8 @@
         }
 
         cell.textContent = symbol;
+        cell.classList.remove('winner');
         cell.classList.add('taken', symbol.toLowerCase());
-        cell.classList.remove('winner', 'x', 'o');
-        cell.classList.add(symbol.toLowerCase());
         cell.setAttribute('aria-label', `Cell ${index + 1}, ${symbol}`);
     }
 
@@ -431,37 +430,41 @@
         if (index !== null) makeMove(index);
     }
 
-    function endGame(result, winningLine = null, options = {}) {
-        const { skipScoreSave = false, endReason = null } = options;
-        state.gameOver = true;
-        cells.forEach(cell => cell.classList.add('disabled'));
+    function getWinStatus(winner, { endReason, context }) {
+        if (context === 'online') {
+            const mySymbol = symbols[getOnlinePlayerIndex()];
+            if (endReason === 'disconnect') {
+                return winner === mySymbol ? 'Opponent left — you win!' : 'You disconnected.';
+            }
+            return winner === mySymbol ? 'You win!' : 'Opponent wins!';
+        }
+        if (state.vsComputer) {
+            return winner === 'X' ? 'You win!' : 'Computer wins!';
+        }
+        return `Player ${winner} wins!`;
+    }
 
-        const activeScores = getActiveScores();
+    function getDrawStatus({ endReason }) {
+        return endReason === 'disconnect' ? 'Game ended.' : "It's a draw!";
+    }
 
-        if (result === 'win') {
-            const winner = symbols[state.currentPlayer];
+    function presentGameResult({ result, winner, winningLine, endReason = null, context, updateScores = true }) {
+        if (winningLine?.length) {
             winningLine.forEach(index => cells[index].classList.add('winner'));
             drawWinLine(winningLine);
+        }
+
+        if (!updateScores) return;
+
+        const scoreTarget = context === 'online' ? sessionScores : scores;
+
+        if (result === 'win') {
             playWinSound();
+            setStatus(getWinStatus(winner, { endReason, context }));
+            if (winner === 'X') scoreTarget.x++;
+            else scoreTarget.o++;
 
-            if (onlineMode) {
-                if (endReason === 'disconnect') {
-                    const mySymbol = symbols[getOnlinePlayerIndex()];
-                    setStatus(winner === mySymbol ? 'Opponent left — you win!' : 'You left the game.');
-                } else {
-                    const mySymbol = symbols[getOnlinePlayerIndex()];
-                    setStatus(winner === mySymbol ? 'You win!' : 'Opponent wins!');
-                }
-            } else if (state.vsComputer) {
-                setStatus(winner === 'X' ? 'You win!' : 'Computer wins!');
-            } else {
-                setStatus(`Player ${winner} wins!`);
-            }
-
-            if (winner === 'X') activeScores.x++;
-            else activeScores.o++;
-
-            if (state.tournament && !onlineMode) {
+            if (context === 'local' && state.tournament) {
                 if (winner === 'X') state.seriesWins.x++;
                 else state.seriesWins.o++;
 
@@ -472,15 +475,30 @@
                 }
             }
         } else {
-            setStatus(endReason === 'disconnect' ? 'Game ended.' : "It's a draw!");
-            activeScores.draws++;
             playDrawSound();
+            setStatus(getDrawStatus({ endReason }));
+            scoreTarget.draws++;
         }
 
-        if (!skipScoreSave) {
-            saveScores();
-            updateScoreboard();
+        if (context === 'local') saveScores();
+        updateScoreboard();
+    }
+
+    function endGame(result, winningLine = null) {
+        state.gameOver = true;
+        cells.forEach(cell => cell.classList.add('disabled'));
+
+        if (result === 'win') {
+            presentGameResult({
+                result: 'win',
+                winner: symbols[state.currentPlayer],
+                winningLine,
+                context: 'local'
+            });
+        } else {
+            presentGameResult({ result: 'draw', context: 'local' });
         }
+
         updateSeriesDisplay();
         updateUndoButton();
         updateLobbyUi();
@@ -494,9 +512,8 @@
         hideWinLine();
 
         cells.forEach((cell, i) => {
-            cell.textContent = '';
-            cell.classList.remove('taken', 'disabled', 'winner', 'x', 'o');
-            cell.setAttribute('aria-label', `Cell ${i + 1}, empty`);
+            cell.classList.remove('disabled', 'winner');
+            renderCell(i, null);
         });
 
         updateStatusForTurn();
@@ -544,10 +561,8 @@
             const board = room.board;
             const wasGameOver = state.gameOver;
             const previousBoard = state.board.slice();
-            if (room.guestId && room.status === 'waiting') {
-                room.status = 'playing';
-            }
-            roomStatus = room.status;
+            const effectiveStatus = room.guestId && room.status === 'waiting' ? 'playing' : room.status;
+            roomStatus = effectiveStatus;
             board.forEach((symbol, index) => {
                 if (symbol !== previousBoard[index]) renderCell(index, symbol);
             });
@@ -558,32 +573,18 @@
             state.gameOver = Boolean(room.gameOver);
             if (room.gameOver) {
                 cells.forEach(cell => cell.classList.add('disabled'));
-                if (room.winningLine) {
-                    room.winningLine.forEach(index => cells[index].classList.add('winner'));
-                    drawWinLine(room.winningLine);
-                }
-                if (!wasGameOver) {
-                    if (room.winner === 'draw') {
-                        sessionScores.draws++;
-                        setStatus(room.endReason === 'disconnect' ? 'Game ended.' : "It's a draw!");
-                        playDrawSound();
-                    } else {
-                        if (room.winner === 'X') sessionScores.x++;
-                        else sessionScores.o++;
-                        playWinSound();
-                        const mySymbol = symbols[getOnlinePlayerIndex()];
-                        if (room.endReason === 'disconnect') {
-                            setStatus(room.winner === mySymbol ? 'Opponent left — you win!' : 'You disconnected.');
-                        } else {
-                            setStatus(room.winner === mySymbol ? 'You win!' : 'Opponent wins!');
-                        }
-                    }
-                    updateScoreboard();
-                }
+                presentGameResult({
+                    result: room.winner === 'draw' ? 'draw' : 'win',
+                    winner: room.winner === 'draw' ? null : room.winner,
+                    winningLine: room.winningLine,
+                    endReason: room.endReason,
+                    context: 'online',
+                    updateScores: !wasGameOver
+                });
             } else {
                 hideWinLine();
                 cells.forEach(cell => cell.classList.remove('winner', 'disabled'));
-                setBoardInteractionEnabled(room.status === 'playing' && isMyOnlineTurn());
+                setBoardInteractionEnabled(effectiveStatus === 'playing' && isMyOnlineTurn());
                 updateStatusForTurn();
             }
 
@@ -594,13 +595,43 @@
         }
     }
 
-    async function leaveOnlineRoom() {
-        showOnlineError('');
-        await Network.leaveRoom();
+    function resetOnlineSession() {
         inOnlineRoom = false;
         onlineRole = null;
         roomStatus = null;
         sessionScores = { x: 0, o: 0, draws: 0 };
+        showOnlineError('');
+    }
+
+    async function enterOnlineRoom(connectFn, initialStatus) {
+        showOnlineError('');
+        createRoomBtn.disabled = true;
+        joinRoomBtn.disabled = true;
+
+        try {
+            const result = await connectFn();
+            onlineRole = result.role;
+            inOnlineRoom = true;
+            roomStatus = initialStatus;
+            resetBoard();
+            updateScoreboard();
+            updateLobbyUi();
+            updateOnlineControls();
+            updateStatusForTurn();
+            if (initialStatus === 'waiting') {
+                setBoardInteractionEnabled(false);
+            }
+        } catch (error) {
+            showOnlineError(error.message || 'Could not connect to room.');
+        } finally {
+            createRoomBtn.disabled = false;
+            joinRoomBtn.disabled = false;
+        }
+    }
+
+    async function leaveOnlineRoom() {
+        await Network.leaveRoom();
+        resetOnlineSession();
         resetBoard();
         updateScoreboard();
         updateLobbyUi();
@@ -608,51 +639,12 @@
         updateStatusForTurn();
     }
 
-    async function handleCreateRoom() {
-        showOnlineError('');
-        createRoomBtn.disabled = true;
-        joinRoomBtn.disabled = true;
-
-        try {
-            const result = await Network.createRoom();
-            onlineRole = result.role;
-            inOnlineRoom = true;
-            roomStatus = 'waiting';
-            resetBoard();
-            updateScoreboard();
-            updateLobbyUi();
-            updateOnlineControls();
-            updateStatusForTurn();
-            setBoardInteractionEnabled(false);
-        } catch (error) {
-            showOnlineError(error.message || 'Could not create room.');
-        } finally {
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
-        }
+    function handleCreateRoom() {
+        enterOnlineRoom(() => Network.createRoom(), 'waiting');
     }
 
-    async function handleJoinRoom() {
-        showOnlineError('');
-        createRoomBtn.disabled = true;
-        joinRoomBtn.disabled = true;
-
-        try {
-            const result = await Network.joinRoom(roomCodeInput.value);
-            onlineRole = result.role;
-            inOnlineRoom = true;
-            roomStatus = 'playing';
-            resetBoard();
-            updateScoreboard();
-            updateLobbyUi();
-            updateOnlineControls();
-            updateStatusForTurn();
-        } catch (error) {
-            showOnlineError(error.message || 'Could not join room.');
-        } finally {
-            createRoomBtn.disabled = false;
-            joinRoomBtn.disabled = false;
-        }
+    function handleJoinRoom() {
+        enterOnlineRoom(() => Network.joinRoom(roomCodeInput.value), 'playing');
     }
 
     async function handleCopyCode() {
@@ -683,11 +675,7 @@
 
         if (previousOnline && mode !== 'online') {
             Network.leaveRoom();
-            inOnlineRoom = false;
-            onlineRole = null;
-            roomStatus = null;
-            sessionScores = { x: 0, o: 0, draws: 0 };
-            showOnlineError('');
+            resetOnlineSession();
         }
 
         if (onlineMode) {

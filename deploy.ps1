@@ -20,9 +20,10 @@ if (-not (Test-Path "firebase-config.js")) {
     exit 1
 }
 
+$configContent = Get-Content "firebase-config.js" -Raw
+
 function Get-ConfigProjectId {
-    $config = Get-Content "firebase-config.js" -Raw
-    if ($config -match "projectId:\s*['`"]([^'`"]+)['`"]") {
+    if ($configContent -match "projectId:\s*['`"]([^'`"]+)['`"]") {
         return $Matches[1]
     }
     return $null
@@ -104,8 +105,7 @@ Write-Host "Using project: $configProjectId" -ForegroundColor Green
 Write-Host ""
 
 # 4. Check firebase-config.js placeholders
-$config = Get-Content "firebase-config.js" -Raw
-if ($config -match "YOUR_API_KEY|YOUR_PROJECT") {
+if ($configContent -match "YOUR_API_KEY|YOUR_PROJECT") {
     Write-Host "Step 3: WARNING - firebase-config.js still has placeholder values." -ForegroundColor Red
     Write-Host ""
     $continue = Read-Host 'Deploy hosting anyway? (y/n)'

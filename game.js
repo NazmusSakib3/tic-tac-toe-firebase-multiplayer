@@ -51,15 +51,6 @@ const TicTacToe = (() => {
         return combinations;
     }
 
-    function getWinner(board, winCombinations) {
-        for (const combination of winCombinations) {
-            const first = board[combination[0]];
-            if (!first) continue;
-            if (combination.every(index => board[index] === first)) return first;
-        }
-        return null;
-    }
-
     function getWinningLine(board, winCombinations) {
         for (const combination of winCombinations) {
             const first = board[combination[0]];
@@ -67,6 +58,11 @@ const TicTacToe = (() => {
             if (combination.every(index => board[index] === first)) return combination;
         }
         return null;
+    }
+
+    function getWinner(board, winCombinations) {
+        const line = getWinningLine(board, winCombinations);
+        return line ? board[line[0]] : null;
     }
 
     function isBoardFull(board) {
@@ -94,7 +90,7 @@ const TicTacToe = (() => {
         return null;
     }
 
-    function minimax(boardState, depth, isMaximizing, winCombinations, size) {
+    function minimax(boardState, depth, isMaximizing, winCombinations) {
         const winner = getWinner(boardState, winCombinations);
         if (winner === symbols[COMPUTER]) return 10 - depth;
         if (winner === symbols[HUMAN]) return depth - 10;
@@ -104,7 +100,7 @@ const TicTacToe = (() => {
             let best = -Infinity;
             for (const index of getEmptyIndices(boardState)) {
                 boardState[index] = symbols[COMPUTER];
-                best = Math.max(best, minimax(boardState, depth + 1, false, winCombinations, size));
+                best = Math.max(best, minimax(boardState, depth + 1, false, winCombinations));
                 boardState[index] = null;
             }
             return best;
@@ -113,7 +109,7 @@ const TicTacToe = (() => {
         let best = Infinity;
         for (const index of getEmptyIndices(boardState)) {
             boardState[index] = symbols[HUMAN];
-            best = Math.min(best, minimax(boardState, depth + 1, true, winCombinations, size));
+            best = Math.min(best, minimax(boardState, depth + 1, true, winCombinations));
             boardState[index] = null;
         }
         return best;
@@ -125,7 +121,7 @@ const TicTacToe = (() => {
 
         for (const index of getEmptyIndices(board)) {
             board[index] = symbols[COMPUTER];
-            const score = minimax(board, 0, false, winCombinations, Math.sqrt(board.length));
+            const score = minimax(board, 0, false, winCombinations);
             board[index] = null;
 
             if (score > bestScore) {
@@ -153,6 +149,16 @@ const TicTacToe = (() => {
         return pickRandom(empty);
     }
 
+    function findWinOrBlockMove(board, winCombinations) {
+        const winMove = findWinningMove(board, symbols[COMPUTER], winCombinations);
+        if (winMove !== null) return winMove;
+
+        const blockMove = findWinningMove(board, symbols[HUMAN], winCombinations);
+        if (blockMove !== null) return blockMove;
+
+        return null;
+    }
+
     function findComputerMove(board, difficulty, winCombinations, size) {
         const empty = getEmptyIndices(board);
         if (!empty.length) return null;
@@ -160,11 +166,8 @@ const TicTacToe = (() => {
         if (size > 3) {
             if (difficulty === 'easy' && Math.random() < 0.8) return pickRandom(empty);
 
-            const winMove = findWinningMove(board, symbols[COMPUTER], winCombinations);
-            if (winMove !== null) return winMove;
-
-            const blockMove = findWinningMove(board, symbols[HUMAN], winCombinations);
-            if (blockMove !== null) return blockMove;
+            const tacticalMove = findWinOrBlockMove(board, winCombinations);
+            if (tacticalMove !== null) return tacticalMove;
 
             return getHeuristicMove(board, size);
         }
@@ -175,11 +178,8 @@ const TicTacToe = (() => {
         }
 
         if (difficulty === 'medium') {
-            const winMove = findWinningMove(board, symbols[COMPUTER], winCombinations);
-            if (winMove !== null) return winMove;
-
-            const blockMove = findWinningMove(board, symbols[HUMAN], winCombinations);
-            if (blockMove !== null) return blockMove;
+            const tacticalMove = findWinOrBlockMove(board, winCombinations);
+            if (tacticalMove !== null) return tacticalMove;
 
             if (Math.random() < 0.5) return getHeuristicMove(board, size);
             return findBestMove(board, winCombinations) ?? pickRandom(empty);
@@ -189,13 +189,11 @@ const TicTacToe = (() => {
     }
 
     function createGame(size = 3) {
-        const winLength = size;
         const cellCount = size * size;
-        const winCombinations = generateWinCombinations(size, winLength);
+        const winCombinations = generateWinCombinations(size, size);
 
         return {
             size,
-            winLength,
             winCombinations,
             board: Array(cellCount).fill(null),
             moveHistory: [],
@@ -213,11 +211,8 @@ const TicTacToe = (() => {
         HUMAN,
         COMPUTER,
         SERIES_TARGET: 3,
-        generateWinCombinations,
-        getWinner,
         getWinningLine,
         isBoardFull,
-        getEmptyIndices,
         findComputerMove,
         createGame
     };

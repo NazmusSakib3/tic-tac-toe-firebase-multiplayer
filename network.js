@@ -11,6 +11,7 @@ const Network = (() => {
     let roomCode = null;
     let onStateChange = null;
     let onError = null;
+    let activeDisconnectMode = null;
 
     function isConfigured() {
         return Boolean(
@@ -143,42 +144,41 @@ const Network = (() => {
         });
     }
 
+    function winnerOnDisconnect(disconnectedRole) {
+        return disconnectedRole === 'host' ? 'O' : 'X';
+    }
+
     function setupDisconnectHandler() {
         if (!roomRef || !role) return;
 
         roomRef.onDisconnect().cancel();
 
-        if (role === 'host') {
-            roomRef.onDisconnect().update({
-                status: 'finished',
-                gameOver: true,
-                endReason: 'disconnect',
-                disconnectedPlayer: 'host',
-                winner: 'O'
-            });
-            return;
-        }
-
         roomRef.onDisconnect().update({
             status: 'finished',
             gameOver: true,
             endReason: 'disconnect',
-            disconnectedPlayer: 'guest',
-            winner: 'X'
+            disconnectedPlayer: role,
+            winner: winnerOnDisconnect(role)
         });
     }
 
     function refreshDisconnectHandler(room) {
         if (!roomRef || !role || !room) return;
 
+        const targetMode = room.status === 'waiting' && role === 'host'
+            ? 'waiting-remove'
+            : room.status === 'playing'
+                ? 'playing'
+                : null;
+
+        if (targetMode === activeDisconnectMode) return;
+
         roomRef.onDisconnect().cancel();
+        activeDisconnectMode = targetMode;
 
-        if (room.status === 'waiting' && role === 'host') {
+        if (targetMode === 'waiting-remove') {
             roomRef.onDisconnect().remove();
-            return;
-        }
-
-        if (room.status === 'playing') {
+        } else if (targetMode === 'playing') {
             setupDisconnectHandler();
         }
     }
@@ -197,6 +197,7 @@ const Network = (() => {
         playerId = null;
         role = null;
         roomCode = null;
+        activeDisconnectMode = null;
     }
 
     async function createRoom() {
@@ -364,7 +365,7 @@ const Network = (() => {
                 gameOver: true,
                 endReason: 'disconnect',
                 disconnectedPlayer: role,
-                winner: role === 'host' ? 'O' : 'X'
+                winner: winnerOnDisconnect(role)
             });
         } else if (room && room.status === 'waiting' && role === 'host') {
             await roomRef.remove();
@@ -377,16 +378,8 @@ const Network = (() => {
         return Boolean(roomRef && roomCode);
     }
 
-    function getRole() {
-        return role;
-    }
-
     function getRoomCode() {
         return roomCode;
-    }
-
-    function getPlayerIndexForRoom(room) {
-        return getPlayerIndex(room);
     }
 
     return {
@@ -397,9 +390,7 @@ const Network = (() => {
         sendMove,
         resetRoom,
         leaveRoom,
-        getRole,
         getRoomCode,
-        isInRoom,
-        getPlayerIndexForRoom
+        isInRoom
     };
 })();
