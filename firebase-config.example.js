@@ -1,3 +1,5 @@
+// Copy this file to firebase-config.js and paste your Firebase web app config.
+// firebase-config.js is gitignored — do not commit real keys to the repository.
 const firebaseConfig = {
     apiKey: 'YOUR_API_KEY',
     authDomain: 'YOUR_PROJECT.firebaseapp.com',

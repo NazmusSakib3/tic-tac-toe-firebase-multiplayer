@@ -62,7 +62,26 @@ Local **2 Players** and **vs Computer** modes work without any Firebase setup. O
 4. Paste your Firebase web app config into `firebase-config.js`.
 5. Deploy database rules and hosting (see [Deployment](#deployment)).
 
+> **Important:** `firebase-config.js` is listed in `.gitignore` and must never be committed. Only `firebase-config.example.js` belongs in the repository.
+
 Players create a room, share the code, and join from another browser or device. The host plays as **X**; the guest plays as **O**.
+
+## Security
+
+Firebase web API keys are included in client-side code when you deploy, but they should still be **restricted** and **never committed to Git**.
+
+If GitHub secret scanning flagged your API key:
+
+1. **Remove the config from Git** — this repo keeps secrets in local `firebase-config.js` only (see `.gitignore`).
+2. **Rotate the exposed key** — in [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → select the key → **Regenerate key**, or create a new Browser key and delete the old one. Update your local `firebase-config.js` with the new value.
+3. **Restrict the new key** — under **Application restrictions**, choose **Websites** and allow only:
+   - `http://localhost:3000/*`
+   - `https://<your-project-id>.web.app/*`
+   - `https://<your-project-id>.firebaseapp.com/*`
+4. **Purge Git history** (public repos) — removing the file from the latest commit is not enough; the old key remains in history. Use [GitHub's secret scanning remediation](https://docs.github.com/en/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push) or rewrite history with [git-filter-repo](https://github.com/newren/git-filter-repo).
+5. **Harden Firebase** — keep Realtime Database rules tight (`database.rules.json`) and consider [Firebase App Check](https://firebase.google.com/docs/app-check) for production.
+
+Local **2 Players** and **vs Computer** modes do not use the Firebase API key.
 
 ## Deployment
 

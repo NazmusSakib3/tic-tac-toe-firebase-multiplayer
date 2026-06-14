@@ -8,6 +8,18 @@ Write-Host ""
 Write-Host "=== Tic Tac Toe - Firebase Deploy ===" -ForegroundColor Cyan
 Write-Host ""
 
+if (-not (Test-Path "firebase-config.js")) {
+    if (Test-Path "firebase-config.example.js") {
+        Copy-Item "firebase-config.example.js" "firebase-config.js"
+        Write-Host "Created firebase-config.js from firebase-config.example.js" -ForegroundColor Yellow
+        Write-Host "Edit firebase-config.js with your Firebase web app config, then run this script again." -ForegroundColor Yellow
+        Write-Host ""
+        exit 1
+    }
+    Write-Host "Missing firebase-config.js. Copy firebase-config.example.js and add your Firebase config." -ForegroundColor Red
+    exit 1
+}
+
 function Get-ConfigProjectId {
     $config = Get-Content "firebase-config.js" -Raw
     if ($config -match "projectId:\s*['`"]([^'`"]+)['`"]") {
