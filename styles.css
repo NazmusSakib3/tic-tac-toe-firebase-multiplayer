@@ -1,0 +1,408 @@
+:root,
+[data-theme="dark"] {
+    --bg: #1a1f2e;
+    --bg-end: #252b3b;
+    --text: #ecf0f1;
+    --cell-bg: #ecf0f1;
+    --cell-text: #2c3e50;
+    --x-color: #e74c3c;
+    --o-color: #3498db;
+    --winner-bg: #f1c40f;
+    --winner-border: #f39c12;
+    --panel-bg: rgba(255, 255, 255, 0.1);
+    --btn-bg: #ecf0f1;
+    --btn-text: #2c3e50;
+    --btn-hover: #bdc3c7;
+    --btn-secondary-bg: rgba(255, 255, 255, 0.15);
+    --btn-secondary-hover: rgba(255, 255, 255, 0.25);
+    --focus: #3498db;
+    --win-line: #e74c3c;
+    --board-bg: #2a3142;
+    --board-border: none;
+    --board-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --cell-border: rgba(255, 255, 255, 0.14);
+    --cell-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="light"] {
+    --bg: #f5f6fa;
+    --text: #2c3e50;
+    --cell-bg: #ffffff;
+    --cell-text: #2c3e50;
+    --x-color: #c0392b;
+    --o-color: #2980b9;
+    --winner-bg: #f9e79f;
+    --winner-border: #f1c40f;
+    --panel-bg: rgba(0, 0, 0, 0.06);
+    --btn-bg: #2c3e50;
+    --btn-text: #ecf0f1;
+    --btn-hover: #34495e;
+    --btn-secondary-bg: rgba(0, 0, 0, 0.08);
+    --btn-secondary-hover: rgba(0, 0, 0, 0.14);
+    --focus: #2980b9;
+    --win-line: #c0392b;
+    --board-bg: #dce3ed;
+    --board-border: none;
+    --board-shadow: 0 4px 20px rgba(44, 62, 80, 0.12);
+    --cell-border: #b8c5d4;
+    --cell-shadow: 0 2px 4px rgba(44, 62, 80, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 1rem;
+    background-color: var(--bg);
+    color: var(--text);
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+[data-theme="dark"] body {
+    background: linear-gradient(160deg, var(--bg) 0%, var(--bg-end) 100%);
+    background-attachment: fixed;
+}
+
+.container {
+    text-align: center;
+    max-width: 480px;
+    width: 100%;
+}
+
+h1 {
+    margin: 0 0 0.75rem;
+    font-size: 2rem;
+}
+
+.status {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+    min-height: 1.5rem;
+}
+
+.series-score {
+    font-size: 0.95rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.9;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.control-group {
+    display: inline-flex;
+    background: var(--panel-bg);
+    border-radius: 5px;
+    padding: 3px;
+}
+
+.control-group button,
+.control-group select {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text);
+    transition: background-color 0.2s ease;
+}
+
+.control-group button.active {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    font-weight: bold;
+}
+
+.control-group select {
+    background-color: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.control-group select option {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+.control-group select:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+}
+
+.scoreboard {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.scoreboard span {
+    background: var(--panel-bg);
+    padding: 0.4rem 0.75rem;
+    border-radius: 5px;
+}
+
+.board-wrap {
+    position: relative;
+    display: inline-block;
+    margin: 0 auto 1.25rem;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--board-bg);
+    border: var(--board-border);
+    box-shadow: var(--board-shadow);
+}
+
+.game {
+    display: grid;
+    gap: 8px;
+    justify-content: center;
+}
+
+.game.size-3 {
+    grid-template-columns: repeat(3, min(28vw, 100px));
+    grid-template-rows: repeat(3, min(28vw, 100px));
+}
+
+.game.size-4 {
+    grid-template-columns: repeat(4, min(22vw, 80px));
+    grid-template-rows: repeat(4, min(22vw, 80px));
+}
+
+.game.size-5 {
+    grid-template-columns: repeat(5, min(17vw, 64px));
+    grid-template-rows: repeat(5, min(17vw, 64px));
+}
+
+.box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    background-color: var(--cell-bg);
+    color: var(--cell-text);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.3s ease, box-shadow 0.2s ease;
+    border: 2px solid var(--cell-border);
+    box-shadow: var(--cell-shadow);
+    aspect-ratio: 1;
+    width: 100%;
+    height: 100%;
+}
+
+.game.size-3 .box { font-size: 2rem; }
+.game.size-4 .box { font-size: 1.5rem; }
+.game.size-5 .box { font-size: 1.2rem; }
+
+.box:hover:not(.taken):not(.disabled) {
+    transform: scale(1.05);
+}
+
+.box:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.box.taken {
+    cursor: default;
+}
+
+.box.disabled {
+    pointer-events: none;
+}
+
+.box.x {
+    color: var(--x-color);
+    animation: pop-in 0.2s ease;
+}
+
+.box.o {
+    color: var(--o-color);
+    animation: pop-in 0.2s ease;
+}
+
+.box.winner {
+    background-color: var(--winner-bg);
+    border-color: var(--winner-border);
+    animation: winner-pulse 0.6s ease;
+}
+
+.win-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.win-line.visible {
+    opacity: 1;
+}
+
+.win-line line {
+    stroke: var(--win-line);
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+@keyframes pop-in {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes winner-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+.toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 0.55rem 1rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: var(--btn-text);
+    background-color: var(--btn-bg);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btn:hover:not(:disabled) {
+    background-color: var(--btn-hover);
+}
+
+.btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.btn:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.btn-secondary {
+    background-color: var(--btn-secondary-bg);
+    color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--btn-secondary-hover);
+}
+
+.btn-icon {
+    min-width: 2.5rem;
+    padding: 0.55rem 0.75rem;
+}
+
+.btn-icon.active {
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.online-lobby {
+    background: var(--panel-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.online-setup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.join-row {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 280px;
+}
+
+.join-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.95rem;
+    border: 2px solid var(--cell-border);
+    border-radius: 5px;
+    background: var(--cell-bg);
+    color: var(--cell-text);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.join-row input:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 1px;
+}
+
+.online-active {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.room-code-row {
+    margin: 0;
+    font-size: 1rem;
+}
+
+#lobby-status {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.online-error {
+    margin: 0.75rem 0 0;
+    color: var(--x-color);
+    font-size: 0.9rem;
+}
+
+.btn-small {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+    margin-left: 0.35rem;
+}

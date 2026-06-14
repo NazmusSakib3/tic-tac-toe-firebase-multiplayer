@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Tic Tac Toe</h1>
+        <p class="status" id="status" aria-live="polite">Player X's turn</p>
+        <p class="series-score hidden" id="series-score" aria-live="polite"></p>
+
+        <div class="controls">
+            <div class="control-group" role="group" aria-label="Game mode">
+                <button type="button" id="mode-2p" class="active" aria-pressed="true">2 Players</button>
+                <button type="button" id="mode-ai" aria-pressed="false">vs Computer</button>
+                <button type="button" id="mode-online" aria-pressed="false">Online</button>
+            </div>
+            <div class="control-group hidden" id="ai-controls" aria-label="AI settings">
+                <select id="difficulty" aria-label="AI difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard" selected>Hard</option>
+                </select>
+            </div>
+            <div class="control-group" aria-label="Board size">
+                <select id="board-size" aria-label="Board size">
+                    <option value="3" selected>3×3</option>
+                    <option value="4">4×4</option>
+                    <option value="5">5×5</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <button type="button" id="tournament-btn" aria-pressed="false">Tournament</button>
+            </div>
+        </div>
+
+        <div id="online-lobby" class="online-lobby hidden" aria-label="Online multiplayer lobby">
+            <div id="online-setup" class="online-setup">
+                <button class="btn" type="button" id="create-room-btn">Create Room</button>
+                <div class="join-row">
+                    <input type="text" id="room-code-input" maxlength="6" placeholder="Room code" autocomplete="off" spellcheck="false" aria-label="Room code">
+                    <button class="btn" type="button" id="join-room-btn">Join</button>
+                </div>
+            </div>
+            <div id="online-active" class="online-active hidden">
+                <p class="room-code-row">
+                    Room: <strong id="room-code-display"></strong>
+                    <button class="btn btn-secondary btn-small" type="button" id="copy-code-btn">Copy</button>
+                </p>
+                <p id="lobby-status">Waiting for opponent...</p>
+                <button class="btn btn-secondary" type="button" id="leave-room-btn">Leave Room</button>
+            </div>
+            <p id="online-error" class="online-error hidden" role="alert"></p>
+        </div>
+
+        <div class="scoreboard" aria-label="Scoreboard">
+            <span id="score-x">X: 0</span>
+            <span id="score-draws">Draws: 0</span>
+            <span id="score-o">O: 0</span>
+        </div>
+
+        <div class="board-wrap">
+            <div class="game size-3" role="grid" aria-label="Tic tac toe board"></div>
+            <svg class="win-line" id="win-line" aria-hidden="true"></svg>
+        </div>
+
+        <div class="toolbar">
+            <button class="btn btn-icon btn-secondary" id="theme-btn" aria-label="Switch theme">☀️</button>
+            <button class="btn btn-icon btn-secondary" id="mute-btn" aria-label="Mute sounds">🔊</button>
+        </div>
+
+        <div class="actions">
+            <button class="btn" id="undo-btn" disabled>Undo</button>
+            <button class="btn" id="restart-btn">New Game</button>
+            <button class="btn btn-secondary" id="reset-scores-btn">Reset Scores</button>
+        </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="game.js"></script>
+    <script src="network.js"></script>
+    <script src="ui.js"></script>
+</body>
+</html>
